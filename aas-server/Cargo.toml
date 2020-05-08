@@ -1,0 +1,19 @@
+[package]
+name = "aas-server"
+version = "0.1.0"
+authors = ["Chua Zheng Leong <czl@iiyume.org>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+openssl = ["grpcio/openssl"]
+openssl-vendored = ["grpcio/openssl-vendored"]
+
+[dependencies]
+sgx-ra   = { path = "../sgx-ra" }
+grpcio   = { version = "0.4", features = ["openssl"] }
+futures  = { version = "0.1" }
+protobuf = { version = "2" }
+
+[build-dependencies]
+protoc-grpcio = "1.2"

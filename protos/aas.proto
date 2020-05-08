@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package aas;
+
+service AasServer {
+	rpc remote_attest(stream Msg) returns (stream Msg) {}
+}
+
+message Msg {
+	enum MsgType {
+		MSG_UNKNOWN = 0;
+		SGX_RA_MSG0 = 1;
+		SGX_RA_MSG1 = 2;
+		SGX_RA_MSG2 = 3;
+		SGX_RA_MSG3 = 4;
+		AAS_RA_RPRT = 5;
+		SGX_RA_MSG0_REPLY = 6;
+	}
+	MsgType msg_type   = 1;
+	bytes   msg_bytes  = 2;
+}
+

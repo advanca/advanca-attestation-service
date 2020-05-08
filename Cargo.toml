@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+	"aas-server",
+	"sgx-ra",
+]

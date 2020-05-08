@@ -1,0 +1,3 @@
+[submodule "sgx-ra"]
+	path = sgx-ra
+	url = git@github.com:advanca/sgx-ra.git
