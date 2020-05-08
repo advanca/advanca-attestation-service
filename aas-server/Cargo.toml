@@ -11,6 +11,7 @@ sgx-ra   = { path = "../sgx-ra" }
 grpcio   = { version = "0.4", features = ["openssl"] }
 futures  = { version = "0.1" }
 protobuf = { version = "2" }
+hex      = { version = "0.4.2" }
 
 [build-dependencies]
 protoc-grpcio = "1.2"

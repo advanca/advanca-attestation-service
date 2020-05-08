@@ -18,6 +18,7 @@ use crate::aas_protos::aas::Msg_MsgType as MsgType;
 
 use grpcio::*;
 
+use hex;
 use sgx_ra;
 
 #[derive(Clone,Default)]
@@ -43,11 +44,12 @@ impl AasServer for AasServerService {
 
             // initialize the session
             let aas_prvkey_der = fs::read("sp_prv_pk8.der").unwrap();
-            let spid = fs::read("sp_ias_spid.bin").unwrap();
+            let spid_hex = fs::read_to_string("sp_ias_spid.txt").unwrap();
+            let spid_hex = spid_hex.trim();
+            let spid = hex::decode(spid_hex).unwrap();
             let ias_apikey_str = fs::read_to_string("sp_ias_apikey.txt").unwrap();
             let is_dev = true;
             let mut session = sgx_ra::sp_init_ra(&aas_prvkey_der, &spid, &ias_apikey_str, is_dev);
-
 
             // get msg0 and msg1 from the attestee
             let msg0 = msg_in.next().unwrap().unwrap();
