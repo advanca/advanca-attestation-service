@@ -80,7 +80,12 @@ impl AasServer for AasServerService {
             // send us msg3, after which we will forward to ias to verify the sgx platform.
             let msg3 = msg_in.next().unwrap().unwrap();
             let ias = sgx_ra::sp_proc_ra_msg3(msg3.get_msg_bytes(), &mut session);
-            println!("{:?}", ias);
+            let quote = ias.get_isv_enclave_quote_body();
+            println!("is_secure: {:?}", ias.is_enclave_secure(true));
+            println!("is_debug : {:?}", quote.is_enclave_debug());
+            println!("is_init  : {:?}", quote.is_enclave_init());
+            println!("mrenclave: {:02x?}", quote.get_mr_enclave());
+            println!("mrsigner : {:02x?}", quote.get_mr_signer());
         });
     }
 }
