@@ -13,8 +13,10 @@ message Msg {
 		SGX_RA_MSG1 = 2;
 		SGX_RA_MSG2 = 3;
 		SGX_RA_MSG3 = 4;
-		AAS_RA_RPRT = 5;
-		SGX_RA_MSG0_REPLY = 6;
+		SGX_RA_MSG0_REPLY = 5;
+		SGX_RA_MSG3_REPLY = 6;
+		AAS_RA_REG_REQUEST = 7;
+		AAS_RA_REG_REPORT = 8;
 	}
 	MsgType msg_type   = 1;
 	bytes   msg_bytes  = 2;

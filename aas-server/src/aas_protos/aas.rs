@@ -227,8 +227,10 @@ pub enum Msg_MsgType {
     SGX_RA_MSG1 = 2,
     SGX_RA_MSG2 = 3,
     SGX_RA_MSG3 = 4,
-    AAS_RA_RPRT = 5,
-    SGX_RA_MSG0_REPLY = 6,
+    SGX_RA_MSG0_REPLY = 5,
+    SGX_RA_MSG3_REPLY = 6,
+    AAS_RA_REG_REQUEST = 7,
+    AAS_RA_REG_REPORT = 8,
 }
 
 impl ::protobuf::ProtobufEnum for Msg_MsgType {
@@ -243,8 +245,10 @@ impl ::protobuf::ProtobufEnum for Msg_MsgType {
             2 => ::std::option::Option::Some(Msg_MsgType::SGX_RA_MSG1),
             3 => ::std::option::Option::Some(Msg_MsgType::SGX_RA_MSG2),
             4 => ::std::option::Option::Some(Msg_MsgType::SGX_RA_MSG3),
-            5 => ::std::option::Option::Some(Msg_MsgType::AAS_RA_RPRT),
-            6 => ::std::option::Option::Some(Msg_MsgType::SGX_RA_MSG0_REPLY),
+            5 => ::std::option::Option::Some(Msg_MsgType::SGX_RA_MSG0_REPLY),
+            6 => ::std::option::Option::Some(Msg_MsgType::SGX_RA_MSG3_REPLY),
+            7 => ::std::option::Option::Some(Msg_MsgType::AAS_RA_REG_REQUEST),
+            8 => ::std::option::Option::Some(Msg_MsgType::AAS_RA_REG_REPORT),
             _ => ::std::option::Option::None
         }
     }
@@ -256,8 +260,10 @@ impl ::protobuf::ProtobufEnum for Msg_MsgType {
             Msg_MsgType::SGX_RA_MSG1,
             Msg_MsgType::SGX_RA_MSG2,
             Msg_MsgType::SGX_RA_MSG3,
-            Msg_MsgType::AAS_RA_RPRT,
             Msg_MsgType::SGX_RA_MSG0_REPLY,
+            Msg_MsgType::SGX_RA_MSG3_REPLY,
+            Msg_MsgType::AAS_RA_REG_REQUEST,
+            Msg_MsgType::AAS_RA_REG_REPORT,
         ];
         values
     }
@@ -288,14 +294,15 @@ impl ::protobuf::reflect::ProtobufValue for Msg_MsgType {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\taas.proto\x12\x03aas\"\xd8\x01\n\x03Msg\x12+\n\x08msg_type\x18\x01\
+    \n\taas.proto\x12\x03aas\"\x8d\x02\n\x03Msg\x12+\n\x08msg_type\x18\x01\
     \x20\x01(\x0e2\x10.aas.Msg.MsgTypeR\x07msgType\x12\x1b\n\tmsg_bytes\x18\
-    \x02\x20\x01(\x0cR\x08msgBytes\"\x86\x01\n\x07MsgType\x12\x0f\n\x0bMSG_U\
+    \x02\x20\x01(\x0cR\x08msgBytes\"\xbb\x01\n\x07MsgType\x12\x0f\n\x0bMSG_U\
     NKNOWN\x10\0\x12\x0f\n\x0bSGX_RA_MSG0\x10\x01\x12\x0f\n\x0bSGX_RA_MSG1\
     \x10\x02\x12\x0f\n\x0bSGX_RA_MSG2\x10\x03\x12\x0f\n\x0bSGX_RA_MSG3\x10\
-    \x04\x12\x0f\n\x0bAAS_RA_RPRT\x10\x05\x12\x15\n\x11SGX_RA_MSG0_REPLY\x10\
-    \x0626\n\tAasServer\x12)\n\rremote_attest\x12\x08.aas.Msg\x1a\x08.aas.Ms\
-    g\"\0(\x010\x01b\x06proto3\
+    \x04\x12\x15\n\x11SGX_RA_MSG0_REPLY\x10\x05\x12\x15\n\x11SGX_RA_MSG3_REP\
+    LY\x10\x06\x12\x16\n\x12AAS_RA_REG_REQUEST\x10\x07\x12\x15\n\x11AAS_RA_R\
+    EG_REPORT\x10\x0826\n\tAasServer\x12)\n\rremote_attest\x12\x08.aas.Msg\
+    \x1a\x08.aas.Msg\"\0(\x010\x01b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy::INIT;

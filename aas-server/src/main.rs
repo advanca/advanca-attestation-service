@@ -81,11 +81,28 @@ impl AasServer for AasServerService {
             let msg3 = msg_in.next().unwrap().unwrap();
             let ias = sgx_ra::sp_proc_ra_msg3(msg3.get_msg_bytes(), &mut session);
             let quote = ias.get_isv_enclave_quote_body();
-            println!("is_secure: {:?}", ias.is_enclave_secure(true));
-            println!("is_debug : {:?}", quote.is_enclave_debug());
+            let is_secure = ias.is_enclave_secure(true);
+            let is_debug = quote.is_enclave_debug();
+            println!("is_secure: {:?}", &is_secure);
+            println!("is_debug : {:?}", &is_debug);
             println!("is_init  : {:?}", quote.is_enclave_init());
             println!("mrenclave: {:02x?}", quote.get_mr_enclave());
             println!("mrsigner : {:02x?}", quote.get_mr_signer());
+
+            // verify mrenclave, mrsigner, is_secure, is_debug
+            let is_verified = is_secure && !is_debug;
+
+            if is_verified {
+                // sends the ok message and recv the request
+                let mut msg = Msg::new();
+                msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
+                msg.set_msg_bytes(1_u32.to_le_bytes().to_vec());
+                let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
+
+                let msg_reg_request = msg_in.next().unwrap().unwrap();
+                assert_eq!(MsgType::AAS_RA_REG_REQUEST, msg_reg_request.get_msg_type());
+
+            }
         });
     }
 }
