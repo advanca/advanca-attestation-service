@@ -1,0 +1,29 @@
+[package]
+name = "isv_enclave"
+version = "0.1.0"
+authors = [ "Chua Zheng Leong <czl@iiyume.org>",]
+edition = "2018"
+
+[workspace]
+
+[lib]
+name = "isv_enclave"
+crate-type = [ "staticlib",]
+
+[patch.'https://github.com/apache/teaclave-sgx-sdk.git']
+sgx_trts          = { path = "/home/czl/incubator-teaclave-sgx-sdk/sgx_trts" }
+sgx_tkey_exchange = { path = "/home/czl/incubator-teaclave-sgx-sdk/sgx_tkey_exchange" }
+sgx_types         = { path = "/home/czl/incubator-teaclave-sgx-sdk/sgx_types" }
+sgx_tstd          = { path = "/home/czl/incubator-teaclave-sgx-sdk/sgx_tstd" }
+
+[dependencies.sgx_types]
+git = "https://github.com/apache/teaclave-sgx-sdk.git"
+
+[dependencies.sgx_tstd]
+git = "https://github.com/apache/teaclave-sgx-sdk.git"
+
+[dependencies]
+sgx_trts              = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_tkey_exchange     = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+advanca-crypto        = { path = "../../../../advanca-crypto", features=["sgx_enclave"] }
+advanca-crypto-ctypes = { path = "../../../../advanca-crypto-ctypes" }

@@ -1,0 +1,20 @@
+[package]
+name = "isv_app"
+version = "0.1.0"
+authors = [ "Chua Zheng Leong <czl@iiyume.org>",]
+edition = "2018"
+
+[workspace]
+
+[dependencies.sgx_types]
+git = "https://github.com/apache/teaclave-sgx-sdk.git"
+
+[dependencies.sgx_urts]
+git = "https://github.com/apache/teaclave-sgx-sdk.git"
+
+[dependencies]
+grpcio   = { version = "0.4", features = ["openssl"] }
+futures  = { version = "0.1" }
+protobuf = { version = "2" }
+advanca-crypto-types = { path = "../../../../advanca-crypto-types" }
+advanca-crypto-ctypes = { path = "../../../../advanca-crypto-ctypes" }

@@ -1,0 +1,70 @@
+
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+enclave {
+    from "sgx_tstd.edl" import *;
+    from "sgx_stdio.edl" import *;
+    from "sgx_backtrace.edl" import *;
+
+    from "sgx_tkey_exchange.edl" import *;
+
+    include "sgx_key_exchange.h"
+    include "sgx_trts.h"
+
+    struct SgxEphemeralKey {
+	sgx_ec256_public_t pubkey;
+	sgx_ec256_signature_t signature;
+    };
+
+    struct SgxAasRequest {
+	sgx_ec256_public_t pubkey;
+	sgx_cmac_128bit_tag_t mac;
+    };
+
+    trusted {
+        /* define ECALLs here. */
+	public sgx_status_t init ();
+
+	public sgx_status_t enclave_init_ra (
+			int b_pse,
+			[out] sgx_ra_context_t *p_context
+			);
+
+	public sgx_status_t enclave_ra_close (
+			sgx_ra_context_t context
+			);
+
+	public sgx_status_t print_keys (
+			sgx_ra_context_t context
+			);
+
+	public sgx_status_t gen_ec256_pubkey (
+			sgx_ra_context_t context,
+			[out] SgxAasRequest *aas_request
+			);
+
+	public sgx_status_t compute_ec256_shared_dhkey (
+			sgx_ra_context_t context,
+			[in] SgxEphemeralKey *ephemeral_key
+			);
+    };
+
+    untrusted {
+        /* define OCALLs here. */
+    };
+};
