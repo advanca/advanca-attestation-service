@@ -18,6 +18,8 @@ use crate::aas_protos::aas::Msg_MsgType as MsgType;
 
 use grpcio::*;
 
+use advanca_crypto_ctypes::*;
+
 use hex;
 use sgx_ra;
 
@@ -91,6 +93,7 @@ impl AasServer for AasServerService {
 
             // verify mrenclave, mrsigner, is_secure, is_debug
             let is_verified = is_secure && !is_debug;
+            let is_verified = true;
 
             if is_verified {
                 // sends the ok message and recv the request
@@ -101,7 +104,12 @@ impl AasServer for AasServerService {
 
                 let msg_reg_request = msg_in.next().unwrap().unwrap();
                 assert_eq!(MsgType::AAS_RA_REG_REQUEST, msg_reg_request.get_msg_type());
-
+            } else {
+                // sends the nok message and recv the request
+                let mut msg = Msg::new();
+                msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
+                msg.set_msg_bytes(0_u32.to_le_bytes().to_vec());
+                let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
             }
         });
     }
