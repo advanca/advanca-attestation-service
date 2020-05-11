@@ -16,5 +16,7 @@ git = "https://github.com/apache/teaclave-sgx-sdk.git"
 grpcio   = { version = "0.4", features = ["openssl"] }
 futures  = { version = "0.1" }
 protobuf = { version = "2" }
+advanca-crypto       = { path = "../../../../advanca-crypto", features = ["untrusted"] }
 advanca-crypto-types = { path = "../../../../advanca-crypto-types" }
 advanca-crypto-ctypes = { path = "../../../../advanca-crypto-ctypes" }
+serde_cbor = { version = "0.11.1" }

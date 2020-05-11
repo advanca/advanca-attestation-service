@@ -18,7 +18,9 @@ use aas_protos::aas_grpc::AasServerClient;
 
 use futures::{Sink, Stream};
 
-use advanca_crypto_ctypes::AasRegRequest;
+use advanca_crypto_ctypes::CAasRegRequest;
+use advanca_crypto_types::*;
+use advanca_crypto::*;
 
 fn init_enclave(enclave_name: &str) -> SgxEnclave {
     let mut launch_token: sgx_launch_token_t = [0; 1024];
@@ -117,23 +119,44 @@ fn main() {
 
     let msg3_reply = rx.next().unwrap().unwrap();
     assert_eq!(msg3_reply.get_msg_type(), MsgType::SGX_RA_MSG3_REPLY);
+    println!("mac: {:02x?}", unsafe{(*p_msg3_ptr).mac});
 
     if msg3_reply.get_msg_bytes() == 1u32.to_le_bytes() {
         // aas accepted our attestation, we'll prepare the request
-        let mut aas_request = AasRegRequest::default();
+        let mut aas_request = CAasRegRequest::default();
         let _ = unsafe {gen_ec256_pubkey(eid, &mut retval, ra_context, &mut aas_request)};
-        let p_aas_request = &aas_request as *const AasRegRequest as *const u8;
-        let aas_request_byte_slice = unsafe{core::slice::from_raw_parts(p_aas_request, size_of::<AasRegRequest>())};
+        let p_aas_request = &aas_request as *const CAasRegRequest as *const u8;
+        let aas_request_byte_slice = unsafe{core::slice::from_raw_parts(p_aas_request, size_of::<CAasRegRequest>())};
 
         let mut msg = Msg::new();
         msg.set_msg_type(MsgType::AAS_RA_REG_REQUEST);
         msg.set_msg_bytes(aas_request_byte_slice.to_vec());
         tx.send((msg, WriteFlags::default())).unwrap();
+
+        let msg_aas_report = rx.next().unwrap().unwrap();
+        assert_eq!(msg_aas_report.get_msg_type(), MsgType::AAS_RA_REG_REPORT);
+        let aas_report_bytes = msg_aas_report.get_msg_bytes();
+        let aas_report: AasRegReport = serde_cbor::from_slice(aas_report_bytes).unwrap();
+        println!("{:?}", aas_report);
+
+        let srv_pubkey = Secp256r1PublicKey{
+        // 04:1a:4f:ea:0d:04:bd:ed:7d:c1:43:ee:74:cb:8e:
+        // 56:9e:6e:49:1c:89:bc:d6:5c:34:8f:8a:5b:40:5f:
+        // 79:53:e3:89:7d:0f:0c:bc:cf:f0:45:ce:c9:a9:1d:
+        // 39:9c:cc:3e:09:ee:b0:2a:b6:d2:8d:dd:67:9b:b4:
+        // bb:5c:68:98:9c
+            gx:[227, 83, 121, 95, 64, 91, 138, 143, 52, 92, 214, 188, 137, 28, 73, 110, 158, 86, 142, 203, 116, 238, 67, 193, 125, 237, 189, 4, 13, 234, 79, 26],
+            gy:[156, 152, 104, 92, 187, 180, 155, 103, 221, 141, 210, 182, 42, 176, 238, 9, 62, 204, 156, 57, 29, 169, 201, 206, 69, 240, 207, 188, 12, 15, 125, 137],
+              
+        };
+        let report_verify = aas_utils::verify_aas_reg_report(&aas_report, &srv_pubkey);
+        println!("report verified: {:?}", report_verify);
+        println!("{:?}", srv_pubkey);
+
     } else {
         println!("AAS rejected our attestation. >.<");
     }
 
-    println!("mac: {:02x?}", unsafe{(*p_msg3_ptr).mac});
 
     unsafe{enclave_ra_close(eid, &mut retval, ra_context)};
 }

@@ -26,12 +26,12 @@ enclave {
     include "sgx_key_exchange.h"
     include "sgx_trts.h"
 
-    struct SgxEphemeralKey {
+    struct CSgxEphemeralKey {
 	sgx_ec256_public_t pubkey;
 	sgx_ec256_signature_t signature;
     };
 
-    struct SgxAasRequest {
+    struct CSgxAasRequest {
 	sgx_ec256_public_t pubkey;
 	sgx_cmac_128bit_tag_t mac;
     };
@@ -55,12 +55,12 @@ enclave {
 
 	public sgx_status_t gen_ec256_pubkey (
 			sgx_ra_context_t context,
-			[out] SgxAasRequest *aas_request
+			[out] CSgxAasRequest *aas_request
 			);
 
 	public sgx_status_t compute_ec256_shared_dhkey (
 			sgx_ra_context_t context,
-			[in] SgxEphemeralKey *ephemeral_key
+			[in] CSgxEphemeralKey *ephemeral_key
 			);
     };
 
