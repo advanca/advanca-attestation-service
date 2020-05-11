@@ -4,6 +4,8 @@ use std::fs;
 use std::thread;
 use std::sync::Arc;
 
+use core::mem::size_of;
+
 use std::io::{Read};
 
 use futures::*;
@@ -19,6 +21,7 @@ use crate::aas_protos::aas::Msg_MsgType as MsgType;
 use grpcio::*;
 
 use advanca_crypto_ctypes::*;
+
 
 use hex;
 use sgx_ra;
@@ -92,8 +95,9 @@ impl AasServer for AasServerService {
             println!("mrsigner : {:02x?}", quote.get_mr_signer());
 
             // verify mrenclave, mrsigner, is_secure, is_debug
-            let is_verified = is_secure && !is_debug;
-            let is_verified = true;
+            // TODO: we'll ignore debug flag for eval purposes.
+            // let is_verified = is_secure && !is_debug;
+            let is_verified = is_secure;
 
             if is_verified {
                 // sends the ok message and recv the request
@@ -104,8 +108,17 @@ impl AasServer for AasServerService {
 
                 let msg_reg_request = msg_in.next().unwrap().unwrap();
                 assert_eq!(MsgType::AAS_RA_REG_REQUEST, msg_reg_request.get_msg_type());
+                let reg_request_bytes = msg_reg_request.get_msg_bytes();
+                assert_eq!(reg_request_bytes.len(), size_of::<CAasRegRequest>());
+                let p_reg_request = unsafe{*(reg_request_bytes.as_ptr() as *const CAasRegRequest)};
+                let reg_report = sgx_ra::sp_proc_aas_reg_request(&p_reg_request, &session).unwrap();
+                let msg_bytes = serde_cbor::to_vec(&reg_report).unwrap();
+                let mut msg = Msg::new();
+                msg.set_msg_type(MsgType::AAS_RA_REG_REPORT);
+                msg.set_msg_bytes(msg_bytes);
+                let _ = msg_out.send((msg.to_owned(), WriteFlags::default())).unwrap();
             } else {
-                // sends the nok message and recv the request
+                // sends the nok message and terminate
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
                 msg.set_msg_bytes(0_u32.to_le_bytes().to_vec());
