@@ -2,4 +2,9 @@
 
 members = [
 	"aas-server",
+	"aas-protos",
+]
+
+exclue = [
+	"examples/attestee-client",
 ]

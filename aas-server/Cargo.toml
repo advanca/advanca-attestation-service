@@ -17,6 +17,4 @@ advanca-crypto-ctypes = { path = "../../advanca-crypto-ctypes" }
 advanca-crypto-types = { path = "../../advanca-crypto-types" }
 advanca-crypto = { path = "../../advanca-crypto", features=["untrusted"] }
 ring     = {version = "0.16.13"}
-
-[build-dependencies]
-protoc-grpcio = "1.2"
+aas-protos = { path = "../aas-protos" }

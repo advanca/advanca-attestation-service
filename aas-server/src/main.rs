@@ -1,5 +1,3 @@
-pub mod aas_protos;
-
 use std::fs;
 use std::thread;
 use std::sync::Arc;
@@ -13,10 +11,10 @@ use futures::stream::Stream;
 use futures::sink::Sink;
 use futures::sync::oneshot;
 
-use crate::aas_protos::aas::{Msg};
-use crate::aas_protos::aas_grpc::{self, AasServer};
+use aas_protos::aas::{Msg};
+use aas_protos::aas_grpc::{self, AasServer};
 
-use crate::aas_protos::aas::Msg_MsgType as MsgType;
+use aas_protos::aas::Msg_MsgType as MsgType;
 
 use grpcio::*;
 
