@@ -5,6 +5,6 @@ members = [
 	"aas-protos",
 ]
 
-exclue = [
+exclude = [
 	"examples/attestee-client",
 ]
