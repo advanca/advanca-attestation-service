@@ -8,8 +8,8 @@ edition = "2018"
 
 [dependencies]
 grpcio   = { version = "0.4", features = ["openssl"] }
-protobuf = { version = "2" }
+protobuf = { version = "~2" }
 futures  = { version = "0.1" }
 
 [build-dependencies]
-protoc-grpcio = "1.2"
+protoc-grpcio = "1.1.0"
