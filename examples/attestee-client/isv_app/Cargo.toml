@@ -20,3 +20,4 @@ advanca-crypto       = { path = "../../../../advanca-crypto", features = ["untru
 advanca-crypto-types = { path = "../../../../advanca-crypto-types" }
 advanca-crypto-ctypes = { path = "../../../../advanca-crypto-ctypes" }
 serde_cbor = { version = "0.11.1" }
+aas-protos = { path = "../../../aas-protos" }

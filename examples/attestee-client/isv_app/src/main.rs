@@ -9,7 +9,6 @@ use isv_enclave_teaclave_ecall::*;
 mod trusted_key_exchange_ecall;
 use trusted_key_exchange_ecall::*;
 
-mod aas_protos;
 use std::sync::Arc;
 use grpcio::*;
 use aas_protos::aas::Msg;
