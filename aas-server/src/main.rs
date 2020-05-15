@@ -7,6 +7,7 @@ use core::mem::size_of;
 use std::io::{Read};
 
 use log::{info, debug};
+use env_logger;
 
 use futures::*;
 use futures::stream::Stream;
@@ -142,6 +143,7 @@ impl AasServer for AasServerService {
 }
 
 fn main() {
+    env_logger::init();
     let env = Arc::new(Environment::new(4));
     let instance = AasServerService::default();
     let service = aas_grpc::create_aas_server(instance);

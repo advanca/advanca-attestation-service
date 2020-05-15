@@ -19,3 +19,4 @@ advanca-crypto = { path = "../../advanca-crypto", features=["untrusted"] }
 ring     = {version = "0.16.13"}
 aas-protos = { path = "../aas-protos" }
 log      = { version = "0.4.8" }
+env_logger = "0.7.1"
