@@ -98,6 +98,7 @@ impl AasServer for AasServerService {
             let is_verified = is_secure;
 
             if is_verified {
+                println!("OK!");
                 // sends the ok message and recv the request
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
@@ -116,6 +117,7 @@ impl AasServer for AasServerService {
                 msg.set_msg_bytes(msg_bytes);
                 let _ = msg_out.send((msg.to_owned(), WriteFlags::default())).unwrap();
             } else {
+                println!("NOK!");
                 // sends the nok message and terminate
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
