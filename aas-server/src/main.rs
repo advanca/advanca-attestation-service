@@ -13,11 +13,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::fs;
-use std::thread;
-use std::sync::Arc;
 use ctrlc;
+use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::thread;
 
 use core::mem::size_of;
 
@@ -29,8 +29,10 @@ use env_logger;
 use futures::*;
 use futures::stream::Stream;
 use futures::sink::Sink;
+use futures::stream::Stream;
+use futures::*;
 
-use aas_protos::aas::{Msg};
+use aas_protos::aas::Msg;
 use aas_protos::aas_grpc::{self, AasServer};
 
 use aas_protos::aas::Msg_MsgType as MsgType;
@@ -38,21 +40,21 @@ use aas_protos::aas::Msg_MsgType as MsgType;
 use grpcio::*;
 
 use advanca_crypto_types::*;
+use advanca_crypto_ctypes::*;
 
 use hex;
 use sgx_ra;
 
-#[derive(Clone,Default)]
-struct AasServerService {
-}
+#[derive(Clone, Default)]
+struct AasServerService {}
 
 impl AasServer for AasServerService {
-    fn remote_attest (
+    fn remote_attest(
         &mut self,
         _ctx: RpcContext,
         msg_in: RequestStream<Msg>,
-        msg_out: DuplexSink<Msg>,) {
-
+        msg_out: DuplexSink<Msg>,
+    ) {
         // we won't be using the grpcio polling thread,
         // instead we'll use our own thread and block
         // on the messages, making it a single, bi-direction
@@ -83,12 +85,16 @@ impl AasServer for AasServerService {
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG0_REPLY);
                 msg.set_msg_bytes(1_u32.to_le_bytes().to_vec());
-                let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
             } else {
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG0_REPLY);
                 msg.set_msg_bytes(0_u32.to_le_bytes().to_vec());
-                let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
             }
             info!("[worker]<--[msg0_reply]--------[aas]                      [ias]");
 
@@ -100,8 +106,9 @@ impl AasServer for AasServerService {
             let mut msg = Msg::new();
             msg.set_msg_type(MsgType::SGX_RA_MSG2);
             msg.set_msg_bytes(msg2_bytes);
-            let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
-            info!("[worker]<--[msg2]--------------[aas]                      [ias]");
+            let _ = msg_out
+                .send((msg.to_owned(), WriteFlags::default()))
+                .unwrap();
 
             // at this point we have derived the secret keys and we'll wait for the attestee to
             // send us msg3, after which we will forward to ias to verify the sgx platform.
@@ -127,31 +134,34 @@ impl AasServer for AasServerService {
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
                 msg.set_msg_bytes(1_u32.to_le_bytes().to_vec());
-                let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
-                info!("[worker]<--[attest_result:1]---[aas]                      [ias]");
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
 
                 let msg_reg_request = msg_in.next().unwrap().unwrap();
                 info!("[worker]---[aas_reg_request]-->[aas]                      [ias]");
                 assert_eq!(MsgType::AAS_RA_REG_REQUEST, msg_reg_request.get_msg_type());
 
                 let reg_request_bytes = msg_reg_request.get_msg_bytes();
-                // assert_eq!(reg_request_bytes.len(), size_of::<CAasRegRequest>());
-
-                let reg_request: AasRegRequest = serde_cbor::from_slice(&reg_request_bytes).unwrap();
-                let reg_report = sgx_ra::sp_proc_aas_reg_request(&reg_request, &session).unwrap();
+                assert_eq!(reg_request_bytes.len(), size_of::<CAasRegRequest>());
+                let p_reg_request =
+                    unsafe { *(reg_request_bytes.as_ptr() as *const CAasRegRequest) };
+                let reg_report = sgx_ra::sp_proc_aas_reg_request(&p_reg_request, &session).unwrap();
                 let msg_bytes = serde_cbor::to_vec(&reg_report).unwrap();
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::AAS_RA_REG_REPORT);
                 msg.set_msg_bytes(msg_bytes);
-                let _ = msg_out.send((msg.to_owned(), WriteFlags::default())).unwrap();
-                info!("[worker]<--[aas_reg_report]----[aas]                      [ias]");
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
             } else {
                 // sends the nok message and terminate
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
                 msg.set_msg_bytes(0_u32.to_le_bytes().to_vec());
-                let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
-                info!("[worker]<--[attest_result:0]---[aas]                      [ias]");
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
             }
         });
     }
@@ -164,7 +174,8 @@ fn main() {
 
     ctrlc::set_handler(move || {
         r.store(false, Ordering::SeqCst);
-    }).expect("Error setting Ctrl-C handler");
+    })
+    .expect("Error setting Ctrl-C handler");
 
     let env = Arc::new(Environment::new(4));
     let instance = AasServerService::default();
