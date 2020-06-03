@@ -29,7 +29,6 @@ use env_logger;
 use futures::*;
 use futures::stream::Stream;
 use futures::sink::Sink;
-use futures::sync::oneshot;
 
 use aas_protos::aas::{Msg};
 use aas_protos::aas_grpc::{self, AasServer};
