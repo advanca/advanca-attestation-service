@@ -21,8 +21,7 @@ use aas_protos::aas::Msg_MsgType as MsgType;
 
 use grpcio::*;
 
-use advanca_crypto_ctypes::*;
-
+use advanca_crypto_types::*;
 
 use hex;
 use sgx_ra;
@@ -91,7 +90,7 @@ impl AasServer for AasServerService {
             // at this point we have derived the secret keys and we'll wait for the attestee to
             // send us msg3, after which we will forward to ias to verify the sgx platform.
             let msg3 = msg_in.next().unwrap().unwrap();
-            let ias = sgx_ra::sp_proc_ra_msg3(msg3.get_msg_bytes(), &mut session);
+            let ias = sgx_ra::sp_proc_ra_msg3(msg3.get_msg_bytes(), &mut session).unwrap();
             let quote = ias.get_isv_enclave_quote_body();
             let is_secure = ias.is_enclave_secure(true);
             let is_debug = quote.is_enclave_debug();
@@ -120,10 +119,10 @@ impl AasServer for AasServerService {
                 assert_eq!(MsgType::AAS_RA_REG_REQUEST, msg_reg_request.get_msg_type());
 
                 let reg_request_bytes = msg_reg_request.get_msg_bytes();
-                assert_eq!(reg_request_bytes.len(), size_of::<CAasRegRequest>());
+                // assert_eq!(reg_request_bytes.len(), size_of::<CAasRegRequest>());
 
-                let p_reg_request = unsafe{*(reg_request_bytes.as_ptr() as *const CAasRegRequest)};
-                let reg_report = sgx_ra::sp_proc_aas_reg_request(&p_reg_request, &session).unwrap();
+                let reg_request: AasRegRequest = serde_cbor::from_slice(&reg_request_bytes).unwrap();
+                let reg_report = sgx_ra::sp_proc_aas_reg_request(&reg_request, &session).unwrap();
                 let msg_bytes = serde_cbor::to_vec(&reg_report).unwrap();
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::AAS_RA_REG_REPORT);
