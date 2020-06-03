@@ -48,7 +48,7 @@ impl AasServer for AasServerService {
             let mut msg_out = msg_out.wait();
 
             // initialize the session
-            let aas_prvkey_der = fs::read("sp_prv_pk8.der").unwrap();
+            let aas_prvkey_der = fs::read("sp_prv.der").unwrap();
             let spid_hex = fs::read_to_string("sp_ias_spid.txt").unwrap();
             let spid_hex = spid_hex.trim();
             let spid = hex::decode(spid_hex).unwrap();
