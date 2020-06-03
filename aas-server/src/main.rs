@@ -13,11 +13,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::fs;
-use std::thread;
-use std::sync::Arc;
 use ctrlc;
+use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::thread;
 
 use core::mem::size_of;
 
@@ -29,8 +29,10 @@ use env_logger;
 use futures::*;
 use futures::stream::Stream;
 use futures::sink::Sink;
+use futures::stream::Stream;
+use futures::*;
 
-use aas_protos::aas::{Msg};
+use aas_protos::aas::Msg;
 use aas_protos::aas_grpc::{self, AasServer};
 
 use aas_protos::aas::Msg_MsgType as MsgType;
@@ -39,21 +41,19 @@ use grpcio::*;
 
 use advanca_crypto_ctypes::*;
 
-
 use hex;
 use sgx_ra;
 
-#[derive(Clone,Default)]
-struct AasServerService {
-}
+#[derive(Clone, Default)]
+struct AasServerService {}
 
 impl AasServer for AasServerService {
-    fn remote_attest (
+    fn remote_attest(
         &mut self,
         _ctx: RpcContext,
         msg_in: RequestStream<Msg>,
-        msg_out: DuplexSink<Msg>,) {
-
+        msg_out: DuplexSink<Msg>,
+    ) {
         // we won't be using the grpcio polling thread,
         // instead we'll use our own thread and block
         // on the messages, making it a single, bi-direction
@@ -84,12 +84,16 @@ impl AasServer for AasServerService {
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG0_REPLY);
                 msg.set_msg_bytes(1_u32.to_le_bytes().to_vec());
-                let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
             } else {
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG0_REPLY);
                 msg.set_msg_bytes(0_u32.to_le_bytes().to_vec());
-                let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
             }
             info!("[worker]<--[msg0_reply]--------[aas]                      [ias]");
 
@@ -165,7 +169,8 @@ fn main() {
 
     ctrlc::set_handler(move || {
         r.store(false, Ordering::SeqCst);
-    }).expect("Error setting Ctrl-C handler");
+    })
+    .expect("Error setting Ctrl-C handler");
 
     let env = Arc::new(Environment::new(4));
     let instance = AasServerService::default();
