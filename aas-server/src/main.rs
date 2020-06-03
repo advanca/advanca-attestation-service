@@ -16,6 +16,8 @@
 use std::fs;
 use std::thread;
 use std::sync::Arc;
+use ctrlc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use core::mem::size_of;
 
@@ -158,6 +160,13 @@ impl AasServer for AasServerService {
 
 fn main() {
     env_logger::init();
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+
+    ctrlc::set_handler(move || {
+        r.store(false, Ordering::SeqCst);
+    }).expect("Error setting Ctrl-C handler");
+
     let env = Arc::new(Environment::new(4));
     let instance = AasServerService::default();
     let service = aas_grpc::create_aas_server(instance);
@@ -167,13 +176,8 @@ fn main() {
         .build()
         .unwrap();
     server.start();
-    let (tx, rx) = oneshot::channel();
-    thread::spawn(|| {
-        println!("Press enter to exit...");
-        let _ = std::io::stdin().read(&mut [0]).unwrap();
-        tx.send(()).unwrap();
-        ()
-    });
-    let _ = rx.wait();
+
+    info!("Press Ctrl-C to stop");
+    while running.load(Ordering::SeqCst) {}
     let _ = server.shutdown().wait();
 }
