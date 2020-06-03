@@ -21,13 +21,9 @@ use std::thread;
 
 use core::mem::size_of;
 
-use std::io::{Read};
-
-use log::{info, debug};
 use env_logger;
+use log::{debug, info};
 
-use futures::*;
-use futures::stream::Stream;
 use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::*;
@@ -39,7 +35,6 @@ use aas_protos::aas::Msg_MsgType as MsgType;
 
 use grpcio::*;
 
-use advanca_crypto_types::*;
 use advanca_crypto_ctypes::*;
 
 use hex;
@@ -113,7 +108,7 @@ impl AasServer for AasServerService {
             // at this point we have derived the secret keys and we'll wait for the attestee to
             // send us msg3, after which we will forward to ias to verify the sgx platform.
             let msg3 = msg_in.next().unwrap().unwrap();
-            let ias = sgx_ra::sp_proc_ra_msg3(msg3.get_msg_bytes(), &mut session).unwrap();
+            let ias = sgx_ra::sp_proc_ra_msg3(msg3.get_msg_bytes(), &mut session);
             let quote = ias.get_isv_enclave_quote_body();
             let is_secure = ias.is_enclave_secure(true);
             let is_debug = quote.is_enclave_debug();
