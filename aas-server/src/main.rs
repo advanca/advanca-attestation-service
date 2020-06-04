@@ -21,13 +21,9 @@ use std::thread;
 
 use core::mem::size_of;
 
-use std::io::{Read};
-
-use log::{info, debug};
 use env_logger;
+use log::{debug, info};
 
-use futures::*;
-use futures::stream::Stream;
 use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::*;
@@ -105,7 +101,9 @@ impl AasServer for AasServerService {
             let mut msg = Msg::new();
             msg.set_msg_type(MsgType::SGX_RA_MSG2);
             msg.set_msg_bytes(msg2_bytes);
-            let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
+            let _ = msg_out
+                .send((msg.to_owned(), WriteFlags::default()))
+                .unwrap();
             info!("[worker]<--[msg2]--------------[aas]                      [ias]");
 
             // at this point we have derived the secret keys and we'll wait for the attestee to
@@ -132,7 +130,9 @@ impl AasServer for AasServerService {
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
                 msg.set_msg_bytes(1_u32.to_le_bytes().to_vec());
-                let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
                 info!("[worker]<--[attest_result:1]---[aas]                      [ias]");
 
                 let msg_reg_request = msg_in.next().unwrap().unwrap();
@@ -142,20 +142,25 @@ impl AasServer for AasServerService {
                 let reg_request_bytes = msg_reg_request.get_msg_bytes();
                 assert_eq!(reg_request_bytes.len(), size_of::<CAasRegRequest>());
 
-                let p_reg_request = unsafe{*(reg_request_bytes.as_ptr() as *const CAasRegRequest)};
+                let p_reg_request =
+                    unsafe { *(reg_request_bytes.as_ptr() as *const CAasRegRequest) };
                 let reg_report = sgx_ra::sp_proc_aas_reg_request(&p_reg_request, &session).unwrap();
                 let msg_bytes = serde_cbor::to_vec(&reg_report).unwrap();
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::AAS_RA_REG_REPORT);
                 msg.set_msg_bytes(msg_bytes);
-                let _ = msg_out.send((msg.to_owned(), WriteFlags::default())).unwrap();
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
                 info!("[worker]<--[aas_reg_report]----[aas]                      [ias]");
             } else {
                 // sends the nok message and terminate
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
                 msg.set_msg_bytes(0_u32.to_le_bytes().to_vec());
-                let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
                 info!("[worker]<--[attest_result:0]---[aas]                      [ias]");
             }
         });
