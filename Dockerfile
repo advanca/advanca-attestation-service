@@ -20,7 +20,7 @@ RUN cargo build --$PROFILE
 
 # ===== SECOND STAGE ======
 
-FROM rust:1.42.0
+FROM rust:1.42.0-slim
 LABEL maintainer "Advanca Authors"
 LABEL description="This is the 2nd stage"
 

@@ -177,7 +177,7 @@ fn main() {
     let service = aas_grpc::create_aas_server(instance);
     let mut server = ServerBuilder::new(env)
         .register_service(service)
-        .bind("127.0.0.1", 11800)
+        .bind("0.0.0.0", 11800)
         .build()
         .unwrap();
     server.start();
