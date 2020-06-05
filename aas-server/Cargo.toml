@@ -8,6 +8,7 @@ license = "Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+structopt = "0.3"
 ctrlc = "3.1.4"
 sgx-ra   = { tag = "v0.1.0", git = "https://github.com/advanca/advanca-sgx-helper" }
 grpcio   = { version = "0.4", features = ["openssl"] }

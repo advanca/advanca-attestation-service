@@ -16,8 +16,9 @@
 use ctrlc;
 use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::thread;
+use structopt::StructOpt;
 
 use core::mem::size_of;
 
@@ -41,7 +42,25 @@ use hex;
 use sgx_ra;
 
 #[derive(Clone, Default)]
-struct AasServerService {}
+struct AasServerService {
+    // These options are read-only, thus not mutex-protected.
+    private_key: Arc<RwLock<Vec<u8>>>,
+    spid: Arc<RwLock<Vec<u8>>>,
+    api_key: Arc<RwLock<String>>,
+}
+
+impl AasServerService {
+    pub fn new(private_key_hex: &str, spid_hex: &str, api_key: &str) -> Self {
+        let private_key = Arc::new(RwLock::new(hex::decode(private_key_hex).unwrap()));
+        let spid = Arc::new(RwLock::new(hex::decode(spid_hex).unwrap()));
+        let api_key = Arc::new(RwLock::new(api_key.to_owned()));
+
+        debug!("SPID  : {:?}", spid_hex);
+        debug!("APIKEY: {:?}", api_key);
+
+        Self {private_key, spid, api_key}
+    }
+}
 
 impl AasServer for AasServerService {
     fn remote_attest(
@@ -54,20 +73,18 @@ impl AasServer for AasServerService {
         // instead we'll use our own thread and block
         // on the messages, making it a single, bi-direction
         // protocol exchange between the attestee and us.
-        thread::spawn(move || {
+
+        let handler = thread::spawn(move || {
             // msg_in  : blocking iterator
             // msg_out : blocking stream
             let mut msg_in = msg_in.wait();
             let mut msg_out = msg_out.wait();
 
             // initialize the session
-            let aas_prvkey_der = fs::read("sp_prv_pk8.der").unwrap();
-            let spid_hex = fs::read_to_string("sp_ias_spid.txt").unwrap();
-            let spid_hex = spid_hex.trim();
-            let spid = hex::decode(spid_hex).unwrap();
-            debug!("SPID  : {:?}", spid_hex);
-            let ias_apikey_str = fs::read_to_string("sp_ias_apikey.txt").unwrap();
-            debug!("APIKEY: {:?}", ias_apikey_str);
+            let aas_prvkey_der = self.private_key.clone().read().unwrap();
+            let spid = self.spid.clone().read().unwrap();
+            let ias_apikey_str = self.api_key.clone().read().unwrap();
+
             let is_dev = true;
             let mut session = sgx_ra::sp_init_ra(&aas_prvkey_der, &spid, &ias_apikey_str, is_dev);
 
@@ -164,10 +181,43 @@ impl AasServer for AasServerService {
                 info!("[worker]<--[attest_result:0]---[aas]                      [ias]");
             }
         });
+
+        handler.join().unwrap();
     }
 }
 
+
+#[derive(Debug, StructOpt)]
+#[structopt(about = "aas-server usage")]
+struct Opt {
+    #[structopt(
+        long = "spid",
+        help = "The SPID",
+        env
+    )]
+    sp_ias_spid: String,
+    #[structopt(
+        long = "api-key",
+        help = "API key for connecting Intel IAS",
+        env,
+    )]
+    sp_ias_apikey: String,
+    #[structopt(
+        long = "key",
+        help = "The ECDSA key in PKCS#8 in hex format",
+        env
+    )]
+    sp_prv_pk8: String,
+    #[structopt(
+        long = "port",
+        help = "The listening port",
+        default_value = "11800",
+    )]
+    port: u16
+}
+
 fn main() {
+    let opt = Opt::from_args();
     env_logger::init();
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
@@ -182,7 +232,7 @@ fn main() {
     let service = aas_grpc::create_aas_server(instance);
     let mut server = ServerBuilder::new(env)
         .register_service(service)
-        .bind("0.0.0.0", 11800)
+        .bind("0.0.0.0", opt.port)
         .build()
         .unwrap();
     server.start();
