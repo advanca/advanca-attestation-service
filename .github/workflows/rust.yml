@@ -1,0 +1,37 @@
+name: Rust
+
+on:
+  push:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: install toolchain and other components
+      uses: actions-rs/toolchain@v1.0.5
+      with:
+        profile: minimal
+        components: rustfmt, clippy
+    - name: format check
+      run: |
+        cargo fmt --manifest-path aas-server/Cargo.toml -- --check
+    # - name: linter
+    #   run: cargo clippy
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: install toolchain and other components
+      uses: actions-rs/toolchain@v1.0.5
+    - name: install Intel SGX SDK v2.9.1
+      run: |
+        sudo apt-get install protobuf-compiler -y
+        curl -sO https://download.01.org/intel-sgx/sgx-linux/2.9.1/distro/ubuntu18.04-server/sgx_linux_x64_sdk_2.9.101.2.bin
+        chmod +x sgx_linux_x64_sdk_2.9.101.2.bin
+        echo -e 'no\n/opt/intel' | ./sgx_linux_x64_sdk_2.9.101.2.bin
+    - name: run unit test
+      run: cargo test --all

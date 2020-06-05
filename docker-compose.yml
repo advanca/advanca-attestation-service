@@ -1,0 +1,17 @@
+# This is for staging usage.
+version: '3.4'
+services:
+  aas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: aas:latest
+    ports:
+      - 11800:11800
+    volumes:
+      - ./:/advanca:ro
+    environment:
+      - "RUST_LOG=info"
+    deploy:
+      restart_policy:
+        condition: on-failure

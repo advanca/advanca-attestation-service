@@ -1,20 +1,34 @@
+// Copyright (C) 2020 ADVANCA PTE. LTD.
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+use ctrlc;
 use std::fs;
-use std::thread;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::thread;
 
 use core::mem::size_of;
 
-use std::io::{Read};
-
-use log::{info, debug};
 use env_logger;
+use log::{debug, info};
 
-use futures::*;
-use futures::stream::Stream;
 use futures::sink::Sink;
-use futures::sync::oneshot;
+use futures::stream::Stream;
+use futures::*;
 
-use aas_protos::aas::{Msg};
+use aas_protos::aas::Msg;
 use aas_protos::aas_grpc::{self, AasServer};
 
 use aas_protos::aas::Msg_MsgType as MsgType;
@@ -23,21 +37,19 @@ use grpcio::*;
 
 use advanca_crypto_ctypes::*;
 
-
 use hex;
 use sgx_ra;
 
-#[derive(Clone,Default)]
-struct AasServerService {
-}
+#[derive(Clone, Default)]
+struct AasServerService {}
 
 impl AasServer for AasServerService {
-    fn remote_attest (
+    fn remote_attest(
         &mut self,
         _ctx: RpcContext,
         msg_in: RequestStream<Msg>,
-        msg_out: DuplexSink<Msg>,) {
-
+        msg_out: DuplexSink<Msg>,
+    ) {
         // we won't be using the grpcio polling thread,
         // instead we'll use our own thread and block
         // on the messages, making it a single, bi-direction
@@ -68,12 +80,16 @@ impl AasServer for AasServerService {
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG0_REPLY);
                 msg.set_msg_bytes(1_u32.to_le_bytes().to_vec());
-                let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
             } else {
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG0_REPLY);
                 msg.set_msg_bytes(0_u32.to_le_bytes().to_vec());
-                let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
             }
             info!("[worker]<--[msg0_reply]--------[aas]                      [ias]");
 
@@ -85,7 +101,9 @@ impl AasServer for AasServerService {
             let mut msg = Msg::new();
             msg.set_msg_type(MsgType::SGX_RA_MSG2);
             msg.set_msg_bytes(msg2_bytes);
-            let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
+            let _ = msg_out
+                .send((msg.to_owned(), WriteFlags::default()))
+                .unwrap();
             info!("[worker]<--[msg2]--------------[aas]                      [ias]");
 
             // at this point we have derived the secret keys and we'll wait for the attestee to
@@ -112,7 +130,9 @@ impl AasServer for AasServerService {
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
                 msg.set_msg_bytes(1_u32.to_le_bytes().to_vec());
-                let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
                 info!("[worker]<--[attest_result:1]---[aas]                      [ias]");
 
                 let msg_reg_request = msg_in.next().unwrap().unwrap();
@@ -122,20 +142,25 @@ impl AasServer for AasServerService {
                 let reg_request_bytes = msg_reg_request.get_msg_bytes();
                 assert_eq!(reg_request_bytes.len(), size_of::<CAasRegRequest>());
 
-                let p_reg_request = unsafe{*(reg_request_bytes.as_ptr() as *const CAasRegRequest)};
+                let p_reg_request =
+                    unsafe { *(reg_request_bytes.as_ptr() as *const CAasRegRequest) };
                 let reg_report = sgx_ra::sp_proc_aas_reg_request(&p_reg_request, &session).unwrap();
                 let msg_bytes = serde_cbor::to_vec(&reg_report).unwrap();
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::AAS_RA_REG_REPORT);
                 msg.set_msg_bytes(msg_bytes);
-                let _ = msg_out.send((msg.to_owned(), WriteFlags::default())).unwrap();
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
                 info!("[worker]<--[aas_reg_report]----[aas]                      [ias]");
             } else {
                 // sends the nok message and terminate
                 let mut msg = Msg::new();
                 msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
                 msg.set_msg_bytes(0_u32.to_le_bytes().to_vec());
-                let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
+                let _ = msg_out
+                    .send((msg.to_owned(), WriteFlags::default()))
+                    .unwrap();
                 info!("[worker]<--[attest_result:0]---[aas]                      [ias]");
             }
         });
@@ -144,22 +169,25 @@ impl AasServer for AasServerService {
 
 fn main() {
     env_logger::init();
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+
+    ctrlc::set_handler(move || {
+        r.store(false, Ordering::SeqCst);
+    })
+    .expect("Error setting Ctrl-C handler");
+
     let env = Arc::new(Environment::new(4));
     let instance = AasServerService::default();
     let service = aas_grpc::create_aas_server(instance);
     let mut server = ServerBuilder::new(env)
         .register_service(service)
-        .bind("127.0.0.1", 12345)
+        .bind("0.0.0.0", 11800)
         .build()
         .unwrap();
     server.start();
-    let (tx, rx) = oneshot::channel();
-    thread::spawn(|| {
-        println!("Press enter to exit...");
-        let _ = std::io::stdin().read(&mut [0]).unwrap();
-        tx.send(()).unwrap();
-        ()
-    });
-    let _ = rx.wait();
+
+    println!("Press Ctrl-C to stop");
+    while running.load(Ordering::SeqCst) {}
     let _ = server.shutdown().wait();
 }
