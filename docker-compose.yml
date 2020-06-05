@@ -10,3 +10,8 @@ services:
       - 11800:11800
     volumes:
       - ./:/advanca:ro
+    environment:
+      - "RUST_LOG=info"
+    deploy:
+      restart_policy:
+        condition: on-failure
