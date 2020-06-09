@@ -2,8 +2,6 @@ use std::fs;
 use std::thread;
 use std::sync::Arc;
 
-use core::mem::size_of;
-
 use std::io::{Read};
 
 use log::{info, debug};
@@ -137,6 +135,7 @@ impl AasServer for AasServerService {
                 let _ = msg_out.send((msg.to_owned(),WriteFlags::default())).unwrap();
                 info!("[worker]<--[attest_result:0]---[aas]                      [ias]");
             }
+            msg_out.close().unwrap();
         });
     }
 }
