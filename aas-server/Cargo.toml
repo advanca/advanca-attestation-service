@@ -5,17 +5,20 @@ authors = ["Chua Zheng Leong <czl@iiyume.org>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ["protobuf-codec"]
+protobuf-codec = ["grpcio/protobuf-codec"]
 
 [dependencies]
+async-std= { version = "1" }
 sgx-ra   = { path = "../../advanca-sgx-helper/sgx-ra" }
-grpcio   = { version = "0.4", features = ["openssl"] }
-futures  = { version = "0.1" }
+grpcio   = { git = "https://github.com/tikv/grpc-rs.git", default-features = false, features = ["openssl"] }
+futures  = { version = "0.3" }
 protobuf = { version = "2" }
 hex      = { version = "0.4.2" }
 serde_cbor = { version = "0.11.1" }
 advanca-crypto-types  = { path = "../../advanca-sgx-helper/advanca-crypto-types" }
 advanca-crypto = { path = "../../advanca-sgx-helper/advanca-crypto", features=["std_env"] }
-ring     = {version = "0.16.13"}
 aas-protos = { path = "../aas-protos" }
 log      = { version = "0.4.8" }
 env_logger = "0.7.1"
