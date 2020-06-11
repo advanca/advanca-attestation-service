@@ -1,8 +1,9 @@
 [package]
 name = "aas-server"
 version = "0.1.0"
-authors = ["Chua Zheng Leong <czl@iiyume.org>"]
+authors = ["Advanca Authors"]
 edition = "2018"
+license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
@@ -19,6 +20,7 @@ hex      = { version = "0.4.2" }
 serde_cbor = { version = "0.11.1" }
 advanca-crypto-types  = { path = "../../advanca-sgx-helper/advanca-crypto-types" }
 advanca-crypto = { path = "../../advanca-sgx-helper/advanca-crypto", features=["std_env"] }
+
 aas-protos = { path = "../aas-protos" }
 log      = { version = "0.4.8" }
 env_logger = "0.7.1"
