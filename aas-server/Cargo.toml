@@ -1,24 +1,27 @@
 [package]
 name = "aas-server"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Advanca Authors"]
 edition = "2018"
 license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ["protobuf-codec"]
+protobuf-codec = ["grpcio/protobuf-codec"]
 
 [dependencies]
-ctrlc = "3.1.4"
-sgx-ra   = { tag = "v0.1.0", git = "https://github.com/advanca/advanca-sgx-helper" }
-grpcio   = { version = "0.4", features = ["openssl"] }
-futures  = { version = "0.1" }
-protobuf = { version = "2" }
-hex      = { version = "0.4.2" }
-serde_cbor = { version = "0.11.1" }
-advanca-crypto-ctypes = { tag = "v0.1.0", git = "https://github.com/advanca/advanca-sgx-helper" }
-advanca-crypto-types = { tag = "v0.1.0", git = "https://github.com/advanca/advanca-sgx-helper" }
-advanca-crypto = { tag = "v0.1.0", git = "https://github.com/advanca/advanca-sgx-helper", features=["untrusted"] }
-ring     = {version = "0.16.13"}
-aas-protos = { path = "../aas-protos" }
-log      = { version = "0.4.8" }
-env_logger = "0.7.1"
+async-std             = { version = "1" }
+grpcio                = { git = "https://github.com/tikv/grpc-rs.git", default-features = false, features = ["openssl"] }
+futures               = { version = "0.3" }
+protobuf              = { version = "2" }
+hex                   = { version = "0.4.2" }
+serde_cbor            = { version = "0.11.1" }
+advanca-crypto-types  = { git = "https://github.com/advanca/advanca-sgx-helper" }
+advanca-crypto        = { git = "https://github.com/advanca/advanca-sgx-helper", features=["std_env"] }
+sgx-ra                = { git = "https://github.com/advanca/advanca-sgx-helper" }
+ctrlc                 = "3.1.4"
+log                   = { version = "0.4.8" }
+env_logger            = "0.7.1"
+
+aas-protos            = { path = "../aas-protos" }

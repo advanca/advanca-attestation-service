@@ -14,28 +14,25 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use ctrlc;
-use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 
-use core::mem::size_of;
-
 use env_logger;
 use log::{debug, info};
 
-use futures::sink::Sink;
-use futures::stream::Stream;
 use futures::*;
 
-use aas_protos::aas::Msg;
-use aas_protos::aas_grpc::{self, AasServer};
+use async_std::fs;
+use async_std::task;
 
-use aas_protos::aas::Msg_MsgType as MsgType;
+use aas_protos::aas::aas::Msg;
+use aas_protos::aas::aas::Msg_MsgType as MsgType;
+use aas_protos::aas::aas_grpc::{self, AasServer};
 
 use grpcio::*;
 
-use advanca_crypto_ctypes::*;
+use advanca_crypto_types::*;
 
 use hex;
 use sgx_ra;
@@ -51,118 +48,125 @@ impl AasServer for AasServerService {
         msg_out: DuplexSink<Msg>,
     ) {
         // we won't be using the grpcio polling thread,
-        // instead we'll use our own thread and block
-        // on the messages, making it a single, bi-direction
-        // protocol exchange between the attestee and us.
+        // instead we'll use our own thread. otherwise
+        // deadlock when we block on the msg_in.
         thread::spawn(move || {
-            // msg_in  : blocking iterator
-            // msg_out : blocking stream
-            let mut msg_in = msg_in.wait();
-            let mut msg_out = msg_out.wait();
+            let mut msg_in = msg_in;
+            let mut msg_out = msg_out;
+            task::block_on(async move {
+                // initialize the session
+                let aas_prvkey_der = fs::read("sp_prv.der").await.unwrap();
+                let spid_hex = fs::read_to_string("sp_ias_spid.txt").await.unwrap();
+                let spid_hex = spid_hex.trim();
+                let spid = hex::decode(spid_hex).unwrap();
+                debug!("SPID  : {:?}", spid_hex);
+                let ias_apikey_str = fs::read_to_string("sp_ias_apikey.txt").await.unwrap();
+                debug!("APIKEY: {:?}", ias_apikey_str);
+                let is_dev = true;
+                let mut session =
+                    sgx_ra::sp_init_ra(&aas_prvkey_der, &spid, &ias_apikey_str, is_dev);
 
-            // initialize the session
-            let aas_prvkey_der = fs::read("sp_prv_pk8.der").unwrap();
-            let spid_hex = fs::read_to_string("sp_ias_spid.txt").unwrap();
-            let spid_hex = spid_hex.trim();
-            let spid = hex::decode(spid_hex).unwrap();
-            debug!("SPID  : {:?}", spid_hex);
-            let ias_apikey_str = fs::read_to_string("sp_ias_apikey.txt").unwrap();
-            debug!("APIKEY: {:?}", ias_apikey_str);
-            let is_dev = true;
-            let mut session = sgx_ra::sp_init_ra(&aas_prvkey_der, &spid, &ias_apikey_str, is_dev);
+                // get msg0 and msg1 from the attestee
+                let msg0 = msg_in.next().await.unwrap().unwrap();
+                info!("[worker]---[msg0]------------->[aas]                      [ias]");
+                assert_eq!(MsgType::SGX_RA_MSG0, msg0.get_msg_type());
 
-            // get msg0 and msg1 from the attestee
-            let msg0 = msg_in.next().unwrap().unwrap();
-            info!("[worker]---[msg0]------------->[aas]                      [ias]");
-            assert_eq!(MsgType::SGX_RA_MSG0, msg0.get_msg_type());
+                if sgx_ra::sp_proc_ra_msg0(msg0.get_msg_bytes()) {
+                    let mut msg = Msg::new();
+                    msg.set_msg_type(MsgType::SGX_RA_MSG0_REPLY);
+                    msg.set_msg_bytes(1_u32.to_le_bytes().to_vec());
+                    let _ = msg_out
+                        .send((msg.to_owned(), WriteFlags::default()))
+                        .await
+                        .unwrap();
+                } else {
+                    let mut msg = Msg::new();
+                    msg.set_msg_type(MsgType::SGX_RA_MSG0_REPLY);
+                    msg.set_msg_bytes(0_u32.to_le_bytes().to_vec());
+                    let _ = msg_out
+                        .send((msg.to_owned(), WriteFlags::default()))
+                        .await
+                        .unwrap();
+                }
+                info!("[worker]<--[msg0_reply]--------[aas]                      [ias]");
 
-            if sgx_ra::sp_proc_ra_msg0(msg0.get_msg_bytes()) {
+                let msg1 = msg_in.next().await.unwrap().unwrap();
+                info!("[worker]---[msg1]------------->[aas]                      [ias]");
+                assert_eq!(MsgType::SGX_RA_MSG1, msg1.get_msg_type());
+                let msg2_bytes = sgx_ra::sp_proc_ra_msg1(msg1.get_msg_bytes(), &mut session);
+
                 let mut msg = Msg::new();
-                msg.set_msg_type(MsgType::SGX_RA_MSG0_REPLY);
-                msg.set_msg_bytes(1_u32.to_le_bytes().to_vec());
+                msg.set_msg_type(MsgType::SGX_RA_MSG2);
+                msg.set_msg_bytes(msg2_bytes);
                 let _ = msg_out
                     .send((msg.to_owned(), WriteFlags::default()))
+                    .await
                     .unwrap();
-            } else {
-                let mut msg = Msg::new();
-                msg.set_msg_type(MsgType::SGX_RA_MSG0_REPLY);
-                msg.set_msg_bytes(0_u32.to_le_bytes().to_vec());
-                let _ = msg_out
-                    .send((msg.to_owned(), WriteFlags::default()))
-                    .unwrap();
-            }
-            info!("[worker]<--[msg0_reply]--------[aas]                      [ias]");
+                info!("[worker]<--[msg2]--------------[aas]                      [ias]");
 
-            let msg1 = msg_in.next().unwrap().unwrap();
-            info!("[worker]---[msg1]------------->[aas]                      [ias]");
-            assert_eq!(MsgType::SGX_RA_MSG1, msg1.get_msg_type());
-            let msg2_bytes = sgx_ra::sp_proc_ra_msg1(msg1.get_msg_bytes(), &mut session);
+                // at this point we have derived the secret keys and we'll wait for the attestee to
+                // send us msg3, after which we will forward to ias to verify the sgx platform.
+                let msg3 = msg_in.next().await.unwrap().unwrap();
+                let ias = sgx_ra::sp_proc_ra_msg3(msg3.get_msg_bytes(), &mut session).unwrap();
+                let quote = ias.get_isv_enclave_quote_body();
+                let is_secure = ias.is_enclave_secure(true);
+                let is_debug = quote.is_enclave_debug();
+                info!("is_secure: {:?}", &is_secure);
+                info!("is_debug : {:?}", &is_debug);
+                info!("is_init  : {:?}", quote.is_enclave_init());
+                info!("mrenclave: {:02x?}", quote.get_mr_enclave());
+                info!("mrsigner : {:02x?}", quote.get_mr_signer());
 
-            let mut msg = Msg::new();
-            msg.set_msg_type(MsgType::SGX_RA_MSG2);
-            msg.set_msg_bytes(msg2_bytes);
-            let _ = msg_out
-                .send((msg.to_owned(), WriteFlags::default()))
-                .unwrap();
-            info!("[worker]<--[msg2]--------------[aas]                      [ias]");
+                // verify mrenclave, mrsigner, is_secure, is_debug
+                // TODO: we'll ignore debug flag for eval purposes.
+                // let is_verified = is_secure && !is_debug;
+                let is_verified = is_secure;
+                debug!("is_enclave_verified: {:?}", is_verified);
 
-            // at this point we have derived the secret keys and we'll wait for the attestee to
-            // send us msg3, after which we will forward to ias to verify the sgx platform.
-            let msg3 = msg_in.next().unwrap().unwrap();
-            let ias = sgx_ra::sp_proc_ra_msg3(msg3.get_msg_bytes(), &mut session);
-            let quote = ias.get_isv_enclave_quote_body();
-            let is_secure = ias.is_enclave_secure(true);
-            let is_debug = quote.is_enclave_debug();
-            info!("is_secure: {:?}", &is_secure);
-            info!("is_debug : {:?}", &is_debug);
-            info!("is_init  : {:?}", quote.is_enclave_init());
-            info!("mrenclave: {:02x?}", quote.get_mr_enclave());
-            info!("mrsigner : {:02x?}", quote.get_mr_signer());
+                if is_verified {
+                    // sends the ok message and recv the request
+                    let mut msg = Msg::new();
+                    msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
+                    msg.set_msg_bytes(1_u32.to_le_bytes().to_vec());
+                    let _ = msg_out
+                        .send((msg.to_owned(), WriteFlags::default()))
+                        .await
+                        .unwrap();
+                    info!("[worker]<--[attest_result:1]---[aas]                      [ias]");
 
-            // verify mrenclave, mrsigner, is_secure, is_debug
-            // TODO: we'll ignore debug flag for eval purposes.
-            // let is_verified = is_secure && !is_debug;
-            let is_verified = is_secure;
-            debug!("is_enclave_verified: {:?}", is_verified);
+                    let msg_reg_request = msg_in.next().await.unwrap().unwrap();
+                    info!("[worker]---[aas_reg_request]-->[aas]                      [ias]");
+                    assert_eq!(MsgType::AAS_RA_REG_REQUEST, msg_reg_request.get_msg_type());
 
-            if is_verified {
-                // sends the ok message and recv the request
-                let mut msg = Msg::new();
-                msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
-                msg.set_msg_bytes(1_u32.to_le_bytes().to_vec());
-                let _ = msg_out
-                    .send((msg.to_owned(), WriteFlags::default()))
-                    .unwrap();
-                info!("[worker]<--[attest_result:1]---[aas]                      [ias]");
+                    let reg_request_bytes = msg_reg_request.get_msg_bytes();
+                    // assert_eq!(reg_request_bytes.len(), size_of::<CAasRegRequest>());
 
-                let msg_reg_request = msg_in.next().unwrap().unwrap();
-                info!("[worker]---[aas_reg_request]-->[aas]                      [ias]");
-                assert_eq!(MsgType::AAS_RA_REG_REQUEST, msg_reg_request.get_msg_type());
-
-                let reg_request_bytes = msg_reg_request.get_msg_bytes();
-                assert_eq!(reg_request_bytes.len(), size_of::<CAasRegRequest>());
-
-                let p_reg_request =
-                    unsafe { *(reg_request_bytes.as_ptr() as *const CAasRegRequest) };
-                let reg_report = sgx_ra::sp_proc_aas_reg_request(&p_reg_request, &session).unwrap();
-                let msg_bytes = serde_cbor::to_vec(&reg_report).unwrap();
-                let mut msg = Msg::new();
-                msg.set_msg_type(MsgType::AAS_RA_REG_REPORT);
-                msg.set_msg_bytes(msg_bytes);
-                let _ = msg_out
-                    .send((msg.to_owned(), WriteFlags::default()))
-                    .unwrap();
-                info!("[worker]<--[aas_reg_report]----[aas]                      [ias]");
-            } else {
-                // sends the nok message and terminate
-                let mut msg = Msg::new();
-                msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
-                msg.set_msg_bytes(0_u32.to_le_bytes().to_vec());
-                let _ = msg_out
-                    .send((msg.to_owned(), WriteFlags::default()))
-                    .unwrap();
-                info!("[worker]<--[attest_result:0]---[aas]                      [ias]");
-            }
+                    let reg_request: AasRegRequest =
+                        serde_cbor::from_slice(&reg_request_bytes).unwrap();
+                    let reg_report =
+                        sgx_ra::sp_proc_aas_reg_request(&reg_request, &session).unwrap();
+                    let msg_bytes = serde_cbor::to_vec(&reg_report).unwrap();
+                    let mut msg = Msg::new();
+                    msg.set_msg_type(MsgType::AAS_RA_REG_REPORT);
+                    msg.set_msg_bytes(msg_bytes);
+                    let _ = msg_out
+                        .send((msg.to_owned(), WriteFlags::default()))
+                        .await
+                        .unwrap();
+                    info!("[worker]<--[aas_reg_report]----[aas]                      [ias]");
+                } else {
+                    // sends the nok message and terminate
+                    let mut msg = Msg::new();
+                    msg.set_msg_type(MsgType::SGX_RA_MSG3_REPLY);
+                    msg.set_msg_bytes(0_u32.to_le_bytes().to_vec());
+                    let _ = msg_out
+                        .send((msg.to_owned(), WriteFlags::default()))
+                        .await
+                        .unwrap();
+                    info!("[worker]<--[attest_result:0]---[aas]                      [ias]");
+                }
+                msg_out.close().await.unwrap();
+            });
         });
     }
 }
@@ -189,5 +193,8 @@ fn main() {
 
     println!("Press Ctrl-C to stop");
     while running.load(Ordering::SeqCst) {}
-    let _ = server.shutdown().wait();
+
+    task::block_on(async move {
+        let _ = server.shutdown().await;
+    });
 }
