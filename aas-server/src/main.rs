@@ -18,13 +18,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 
-use std::io::{Read};
-
 use env_logger;
 use log::{debug, info};
 
 use futures::*;
-use futures::channel::oneshot;
 
 use async_std::task;
 use async_std::fs;
@@ -57,7 +54,6 @@ impl AasServer for AasServerService {
         thread::spawn(move || {
             let mut msg_in = msg_in;
             let mut msg_out = msg_out;
-          
             task::block_on(async move {
                 // initialize the session
                 let aas_prvkey_der = fs::read("sp_prv.der").await.unwrap();
@@ -152,6 +148,7 @@ impl AasServer for AasServerService {
                 msg_out.close().await.unwrap();
             });
 
+        });
     }
 }
 
@@ -177,5 +174,8 @@ fn main() {
 
     println!("Press Ctrl-C to stop");
     while running.load(Ordering::SeqCst) {}
-    let _ = server.shutdown().wait();
+
+    task::block_on(async move {
+        let _ = server.shutdown().await;
+    });
 }
