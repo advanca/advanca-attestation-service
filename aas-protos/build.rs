@@ -1,8 +1,6 @@
 fn main() {
     let out_dir = "src/";
-    let modules = &[
-        ("protos/aas", "aas"),
-    ];
+    let modules = &[("protos/aas", "aas")];
     for (dir, package) in modules {
         let out_dir = format!("{}/{}", out_dir, package);
         let files: Vec<_> = walkdir::WalkDir::new(format!("{}", dir))
