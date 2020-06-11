@@ -5,11 +5,15 @@ authors = ["Chua Zheng Leong <czl@iiyume.org>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ["protobuf-codec"]
+protobuf-codec = ["grpcio/protobuf-codec", "protobuf-build/grpcio-protobuf-codec"]
 
 [dependencies]
-grpcio   = { version = "0.4", features = ["openssl"] }
-protobuf = { version = "~2" }
-futures  = { version = "0.1" }
+grpcio   = { git = "https://github.com/tikv/grpc-rs.git", default-features = false, features = ["openssl"] }
+protobuf = { version = "2" }
+futures  = { version = "0.3" }
 
 [build-dependencies]
-protoc-grpcio = "1.1.0"
+protobuf-build = { version = "0.11", default-features = false }
+walkdir = "2.2"
