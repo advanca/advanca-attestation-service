@@ -11,17 +11,17 @@ default = ["protobuf-codec"]
 protobuf-codec = ["grpcio/protobuf-codec"]
 
 [dependencies]
-async-std= { version = "1" }
-sgx-ra   = { path = "../../advanca-sgx-helper/sgx-ra" }
-grpcio   = { git = "https://github.com/tikv/grpc-rs.git", default-features = false, features = ["openssl"] }
-futures  = { version = "0.3" }
-protobuf = { version = "2" }
-hex      = { version = "0.4.2" }
-serde_cbor = { version = "0.11.1" }
-advanca-crypto-types  = { path = "../../advanca-sgx-helper/advanca-crypto-types" }
-advanca-crypto = { path = "../../advanca-sgx-helper/advanca-crypto", features=["std_env"] }
-ctrlc    = "3.1.4"
+async-std             = { version = "1" }
+grpcio                = { git = "https://github.com/tikv/grpc-rs.git", default-features = false, features = ["openssl"] }
+futures               = { version = "0.3" }
+protobuf              = { version = "2" }
+hex                   = { version = "0.4.2" }
+serde_cbor            = { version = "0.11.1" }
+advanca-crypto-types  = { git = "https://github.com/advanca/advanca-sgx-helper" }
+advanca-crypto        = { git = "https://github.com/advanca/advanca-sgx-helper", features=["std_env"] }
+sgx-ra                = { git = "https://github.com/advanca/advanca-sgx-helper" }
+ctrlc                 = "3.1.4"
+log                   = { version = "0.4.8" }
+env_logger            = "0.7.1"
 
-aas-protos = { path = "../aas-protos" }
-log      = { version = "0.4.8" }
-env_logger = "0.7.1"
+aas-protos            = { path = "../aas-protos" }
