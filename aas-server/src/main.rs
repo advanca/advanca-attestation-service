@@ -26,9 +26,9 @@ use futures::*;
 use async_std::fs;
 use async_std::task;
 
-use aas_protos::aas::aas::Msg;
-use aas_protos::aas::aas::Msg_MsgType as MsgType;
-use aas_protos::aas::aas_grpc::{self, AasServer};
+use aas_protos_std::aas::aas::Msg;
+use aas_protos_std::aas::aas::Msg_MsgType as MsgType;
+use aas_protos_std::aas::aas_grpc::{self, AasServer};
 
 use grpcio::*;
 
