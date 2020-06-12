@@ -14,7 +14,7 @@ protobuf-codec = ["grpcio/protobuf-codec"]
 async-std             = { version = "1" }
 grpcio                = { git = "https://github.com/tikv/grpc-rs.git", default-features = false, features = ["openssl"] }
 futures               = { version = "0.3" }
-protobuf              = { version = "2" }
+protobuf              = { version = "2.14" }
 hex                   = { version = "0.4.2" }
 serde_cbor            = { version = "0.11.1" }
 advanca-crypto-types  = { git = "https://github.com/advanca/advanca-sgx-helper" }
