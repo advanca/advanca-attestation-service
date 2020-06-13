@@ -37,7 +37,7 @@ fn main() {
             .includes(&["../protos".to_owned()])
             .files(&files)
             .out_dir(&out_dir)
-            .generate();
+            .generate_no_grpcio();
         for str_path in files {
             let output_path = Path::new(&out_dir);
             let proto_path = Path::new(&str_path);
