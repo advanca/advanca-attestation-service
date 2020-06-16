@@ -11,6 +11,6 @@ exclude = [
 ]
 
 [patch.crates-io]
-grpcio-compiler = { rev = "249e21b3593a8bdd58429d2552b9ab72d6d46526", git = "https://github.com/tikv/grpc-rs.git", default-features = false }
+# grpcio-compiler patch is no longer needed. for rev 1c76 as its using 0.6.0
+# grpcio-compiler = { rev = "249e21b3593a8bdd58429d2552b9ab72d6d46526", git = "https://github.com/tikv/grpc-rs.git", default-features = false }
 protobuf-build  = { rev = "1c76baf642c9abc6428c94c66f4f16304c77950e", git = "https://github.com/advanca/protobuf-build.git" }
-#protobuf-build  = { rev = "4360191ef00502d1c005f1ea5bbe9182ef23a198", git = "https://github.com/tikv/protobuf-build.git" }

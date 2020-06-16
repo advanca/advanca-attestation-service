@@ -12,6 +12,6 @@ protobuf = { version = "=2.8.1" }
 futures  = { version = "0.3" }
 
 [build-dependencies]
-protobuf-build = { version = "0.11", default-features = false, features = ["grpcio-protobuf-codec"] }
+protobuf-build = { version = "=0.11.3", default-features = false, features = ["grpcio-protobuf-codec"] }
 walkdir = "2.2"
 
