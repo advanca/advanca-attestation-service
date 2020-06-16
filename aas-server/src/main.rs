@@ -109,8 +109,11 @@ impl AasServer for AasServerService {
                 let msg3 = msg_in.next().await.unwrap().unwrap();
                 let ias = sgx_ra::sp_proc_ra_msg3(msg3.get_msg_bytes(), &mut session).unwrap();
                 let quote = ias.get_isv_enclave_quote_body();
-                let is_secure = ias.is_enclave_secure(true);
+                let is_secure = ias.is_enclave_secure(false);
                 let is_debug = quote.is_enclave_debug();
+                debug!("ias: {:?}", ias.isv_enclave_quote_status);
+                debug!("ias: {:?}", ias.advisory_ids);
+                debug!("ias: {:?}", ias.platform_info_blob);
                 info!("is_secure: {:?}", &is_secure);
                 info!("is_debug : {:?}", &is_debug);
                 info!("is_init  : {:?}", quote.is_enclave_init());
@@ -164,6 +167,15 @@ impl AasServer for AasServerService {
                         .await
                         .unwrap();
                     info!("[worker]<--[attest_result:0]---[aas]                      [ias]");
+                    let platform_info_blob = hex::decode(ias.platform_info_blob.unwrap()).unwrap();
+                    debug!("platform_info_blob: {:?}", platform_info_blob);
+                    let mut msg = Msg::new();
+                    msg.set_msg_type(MsgType::AAS_RA_TCB_UPDATE);
+                    msg.set_msg_bytes(platform_info_blob);
+                    let _ = msg_out
+                        .send((msg.to_owned(), WriteFlags::default()))
+                        .await
+                        .unwrap();
                 }
                 msg_out.close().await.unwrap();
             });

@@ -17,6 +17,7 @@ message Msg {
 		SGX_RA_MSG3_REPLY = 6;
 		AAS_RA_REG_REQUEST = 7;
 		AAS_RA_REG_REPORT = 8;
+		AAS_RA_TCB_UPDATE = 9;
 	}
 	MsgType msg_type   = 1;
 	bytes   msg_bytes  = 2;
