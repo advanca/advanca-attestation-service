@@ -19,5 +19,6 @@ sgx-ra                = { tag = "v0.2.0", git = "https://github.com/advanca/adva
 ctrlc                 = "3.1.4"
 log                   = { version = "0.4.8" }
 env_logger            = "0.7.1"
+structopt             = "0.3"
 
 aas-protos-std        = { path = "../aas-protos/aas-protos-std" }
