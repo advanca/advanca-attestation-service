@@ -34,11 +34,31 @@ use grpcio::*;
 
 use advanca_crypto_types::*;
 
+use structopt::StructOpt;
 use hex;
 use sgx_ra;
 
+#[derive(Debug, StructOpt)]
+#[structopt(about = "aas-server usage")]
+struct Opt {
+    #[structopt(
+        long = "conditional-secure",
+        help = "treat conditional secure IAS response as secure"
+    )]
+    conditional_secure: bool,
+    #[structopt(
+        short = "p",
+        long = "port",
+        default_value = "11800",
+        help = "aas-server listening port"
+    )]
+    aas_port: u16,
+}
+
 #[derive(Clone, Default)]
-struct AasServerService {}
+struct AasServerService {
+    conditional_secure: bool,
+}
 
 impl AasServer for AasServerService {
     fn remote_attest(
@@ -47,12 +67,13 @@ impl AasServer for AasServerService {
         msg_in: RequestStream<Msg>,
         msg_out: DuplexSink<Msg>,
     ) {
+        let mut msg_in = msg_in;
+        let mut msg_out = msg_out;
+        let conditional_secure = self.conditional_secure;
         // we won't be using the grpcio polling thread,
         // instead we'll use our own thread. otherwise
         // deadlock when we block on the msg_in.
         thread::spawn(move || {
-            let mut msg_in = msg_in;
-            let mut msg_out = msg_out;
             task::block_on(async move {
                 // initialize the session
                 let aas_prvkey_der = fs::read("sp_prv.der").await.unwrap();
@@ -109,7 +130,7 @@ impl AasServer for AasServerService {
                 let msg3 = msg_in.next().await.unwrap().unwrap();
                 let ias = sgx_ra::sp_proc_ra_msg3(msg3.get_msg_bytes(), &mut session).unwrap();
                 let quote = ias.get_isv_enclave_quote_body();
-                let is_secure = ias.is_enclave_secure(false);
+                let is_secure = ias.is_enclave_secure(conditional_secure);
                 let is_debug = quote.is_enclave_debug();
                 debug!("ias: {:?}", ias.isv_enclave_quote_status);
                 debug!("ias: {:?}", ias.advisory_ids);
@@ -184,6 +205,7 @@ impl AasServer for AasServerService {
 }
 
 fn main() {
+    let opt = Opt::from_args();
     env_logger::init();
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
@@ -194,11 +216,13 @@ fn main() {
     .expect("Error setting Ctrl-C handler");
 
     let env = Arc::new(Environment::new(4));
-    let instance = AasServerService::default();
+    let instance = AasServerService {
+        conditional_secure : opt.conditional_secure,
+    };
     let service = aas_grpc::create_aas_server(instance);
     let mut server = ServerBuilder::new(env)
         .register_service(service)
-        .bind("0.0.0.0", 11800)
+        .bind("0.0.0.0", opt.aas_port)
         .build()
         .unwrap();
     server.start();
