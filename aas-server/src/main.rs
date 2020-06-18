@@ -191,7 +191,7 @@ impl AasServer for AasServerService {
                     let platform_info_blob = hex::decode(ias.platform_info_blob.unwrap()).unwrap();
                     debug!("platform_info_blob: {:?}", platform_info_blob);
                     let mut msg = Msg::new();
-                    msg.set_msg_type(MsgType::MSG_UNKNOWN);
+                    msg.set_msg_type(MsgType::AAS_RA_TCB_UPDATE);
                     msg.set_msg_bytes(platform_info_blob);
                     let _ = msg_out
                         .send((msg.to_owned(), WriteFlags::default()))
