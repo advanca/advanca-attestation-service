@@ -4,6 +4,7 @@ package aas;
 
 service AasServer {
 	rpc remote_attest(stream Msg) returns (stream Msg) {}
+	rpc timestamp(TimestampRequest) returns (TimestampResponse) {}
 }
 
 message Msg {
@@ -23,3 +24,10 @@ message Msg {
 	bytes   msg_bytes  = 2;
 }
 
+message TimestampRequest {
+	bytes data = 1;
+}
+
+message TimestampResponse {
+	bytes signed_data = 1;
+}

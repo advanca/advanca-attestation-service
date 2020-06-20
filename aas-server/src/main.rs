@@ -19,19 +19,19 @@ use std::sync::Arc;
 use std::thread;
 
 use env_logger;
-use log::{debug, info};
+use log::{debug, error, info, trace};
 
 use futures::*;
 
-use async_std::fs;
 use async_std::task;
 
-use aas_protos_std::aas::aas::Msg;
+use aas_protos_std::aas::aas::*;
 use aas_protos_std::aas::aas::Msg_MsgType as MsgType;
 use aas_protos_std::aas::aas_grpc::{self, AasServer};
 
 use grpcio::*;
 
+use advanca_crypto::*;
 use advanca_crypto_types::*;
 
 use structopt::StructOpt;
@@ -58,9 +58,36 @@ struct Opt {
 #[derive(Clone, Default)]
 struct AasServerService {
     conditional_secure: bool,
+    aas_prvkey_der: Vec<u8>,
+    spid: Vec<u8>,
+    ias_apikey_str: String,
 }
 
 impl AasServer for AasServerService {
+    fn timestamp (
+        &mut self,
+        ctx: RpcContext,
+        timestamp_request: TimestampRequest,
+        sink: UnarySink<TimestampResponse>,
+    ) {
+        let aas_timestamp = AasTimestamp {
+            timestamp : std::time::SystemTime::now()
+                .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+            data: timestamp_request.data,
+        };
+        let aas_prvkey = Secp256r1PrivateKey::from_der(&self.aas_prvkey_der);
+        let aas_timestamp_bytes = serde_cbor::to_vec(&aas_timestamp).unwrap();
+        let signed_timestamp = secp256r1_sign_msg(&aas_prvkey, &aas_timestamp_bytes).unwrap();
+        let mut timestamp_response = TimestampResponse::new();
+        timestamp_response.signed_data = serde_cbor::to_vec(&signed_timestamp).unwrap();
+        let f = sink.success(timestamp_response.clone())
+            .map_err(move |err| error!("failed to reply: {:?}", err))
+            .map(move |_| trace!("replied with {:?}", timestamp_response));
+        ctx.spawn(f)
+    }
+
     fn remote_attest(
         &mut self,
         _ctx: RpcContext,
@@ -70,18 +97,16 @@ impl AasServer for AasServerService {
         let mut msg_in = msg_in;
         let mut msg_out = msg_out;
         let conditional_secure = self.conditional_secure;
+        let aas_prvkey_der = self.aas_prvkey_der.clone();
+        let spid = self.spid.clone();
+        let ias_apikey_str = self.ias_apikey_str.clone();
         // we won't be using the grpcio polling thread,
         // instead we'll use our own thread. otherwise
         // deadlock when we block on the msg_in.
         thread::spawn(move || {
             task::block_on(async move {
                 // initialize the session
-                let aas_prvkey_der = fs::read("sp_prv.der").await.unwrap();
-                let spid_hex = fs::read_to_string("sp_ias_spid.txt").await.unwrap();
-                let spid_hex = spid_hex.trim();
-                let spid = hex::decode(spid_hex).unwrap();
-                debug!("SPID  : {:?}", spid_hex);
-                let ias_apikey_str = fs::read_to_string("sp_ias_apikey.txt").await.unwrap();
+                debug!("SPID  : {:?}", spid);
                 debug!("APIKEY: {:?}", ias_apikey_str);
                 let is_dev = true;
                 let mut session =
@@ -215,9 +240,18 @@ fn main() {
     })
     .expect("Error setting Ctrl-C handler");
 
+    let aas_prvkey_der = std::fs::read("sp_prv.der").unwrap();
+    let spid_hex = std::fs::read_to_string("sp_ias_spid.txt").unwrap();
+    let spid_hex = spid_hex.trim();
+    let spid = hex::decode(spid_hex).unwrap();
+    let ias_apikey_str = std::fs::read_to_string("sp_ias_apikey.txt").unwrap();
+
     let env = Arc::new(Environment::new(4));
     let instance = AasServerService {
         conditional_secure : opt.conditional_secure,
+        aas_prvkey_der: aas_prvkey_der,
+        spid: spid,
+        ias_apikey_str: ias_apikey_str,
     };
     let service = aas_grpc::create_aas_server(instance);
     let mut server = ServerBuilder::new(env)
