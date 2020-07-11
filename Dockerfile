@@ -1,4 +1,4 @@
-FROM rust:1.42.0 as builder
+FROM rust:1.44.0 as builder
 LABEL maintainer "Advanca Authors"
 LABEL description="This is the build stage for advanca-attestation-service"
 
@@ -16,11 +16,13 @@ RUN apt-get update && \
     && chmod +x ${SGX_SDK_BIN} \
     && echo -e 'no\n/opt/intel' | ./${SGX_SDK_BIN}
 
+RUN rustup default nightly-2020-04-07-x86_64-unknown-linux-gnu
+RUN cargo install -f cargo
 RUN cargo build --$PROFILE
 
 # ===== SECOND STAGE ======
 
-FROM rust:1.42.0-slim
+FROM rust:1.44.0-slim
 LABEL maintainer "Advanca Authors"
 LABEL description="This is the 2nd stage"
 
