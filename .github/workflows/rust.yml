@@ -40,4 +40,9 @@ jobs:
         chmod +x sgx_linux_x64_sdk_2.9.101.2.bin
         echo -e 'no\n/opt/intel' | ./sgx_linux_x64_sdk_2.9.101.2.bin
     - name: run unit test
-      run: cargo test --all
+      run: |
+        cd aas-server
+        cargo +nightly-2020-04-07 test --all
+        cd ..
+        cd aas-protos/aas-protos-std
+        cargo +nightly-2020-04-07 test --all
