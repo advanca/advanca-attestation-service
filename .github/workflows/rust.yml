@@ -42,7 +42,7 @@ jobs:
     - name: run unit test
       run: |
         cd aas-server
-        cargo +nightly-2020-04-07 test --all
+        rustup run nightly-2020-04-07 cargo test
         cd ..
         cd aas-protos/aas-protos-std
-        cargo +nightly-2020-04-07 test --all
+        rustup run nightly-2020-04-07 cargo test
