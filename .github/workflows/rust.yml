@@ -31,7 +31,8 @@ jobs:
         toolchain: nightly-2020-04-07
     - name: Updating Cargo
       run: |
-        rustup run nightly-2020-04-07 cargo install -f cargo
+        rustup default nightly-2020-04-07
+        cargo install -f cargo
     - name: install Intel SGX SDK v2.9.1
       run: |
         sudo apt-get install protobuf-compiler clang -y
@@ -40,8 +41,9 @@ jobs:
         echo -e 'no\n/opt/intel' | ./sgx_linux_x64_sdk_2.9.101.2.bin
     - name: run unit test
       run: |
+        rustup default nightly-2020-04-07
         cd aas-server
-        rustup run nightly-2020-04-07 cargo test
+        cargo test
         cd ..
         cd aas-protos/aas-protos-std
-        rustup run nightly-2020-04-07 cargo test
+        cargo test
