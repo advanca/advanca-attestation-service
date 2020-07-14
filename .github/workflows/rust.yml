@@ -8,7 +8,7 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
     - name: install toolchain and other components
@@ -25,6 +25,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: install Intel SGX SDK v2.9.1
+      run: |
+        apt-get update
+        apt-get install -y --no-install-recommends build-essential cmake pkg-config protobuf-compiler
+        curl -sO https://download.01.org/intel-sgx/sgx-linux/2.9.1/distro/ubuntu18.04-server/sgx_linux_x64_sdk_2.9.101.2.bin
+        chmod +x sgx_linux_x64_sdk_2.9.101.2.bin
+        echo -e 'no\n/opt/intel' | ./sgx_linux_x64_sdk_2.9.101.2.bin
     - name: install toolchain and other components
       uses: actions-rs/toolchain@v1.0.5
       with:
@@ -33,12 +40,6 @@ jobs:
       run: |
         rustup default nightly-2020-04-07
         cargo install -f cargo
-    - name: install Intel SGX SDK v2.9.1
-      run: |
-        sudo apt-get install protobuf-compiler clang -y
-        curl -sO https://download.01.org/intel-sgx/sgx-linux/2.9.1/distro/ubuntu18.04-server/sgx_linux_x64_sdk_2.9.101.2.bin
-        chmod +x sgx_linux_x64_sdk_2.9.101.2.bin
-        echo -e 'no\n/opt/intel' | ./sgx_linux_x64_sdk_2.9.101.2.bin
     - name: run unit test
       run: |
         rustup default nightly-2020-04-07
