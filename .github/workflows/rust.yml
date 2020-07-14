@@ -31,8 +31,7 @@ jobs:
         toolchain: nightly-2020-04-07
     - name: Updating Cargo
       run: |
-        rustup default nightly-2020-04-07
-        cargo install -f cargo
+        rustup run nightly-2020-04-07 cargo install -f cargo
     - name: install Intel SGX SDK v2.9.1
       run: |
         sudo apt-get install protobuf-compiler clang -y
