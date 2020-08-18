@@ -25,10 +25,6 @@ use futures::*;
 
 use async_std::task;
 
-<<<<<<< HEAD
-=======
-use aas_protos_std::aas::aas::*;
->>>>>>> 8ee5d2c083f12677b9451d134216901913887c3d
 use aas_protos_std::aas::aas::Msg_MsgType as MsgType;
 use aas_protos_std::aas::aas::*;
 use aas_protos_std::aas::aas_grpc::{self, AasServer};
@@ -38,27 +34,9 @@ use grpcio::*;
 use advanca_crypto::*;
 use advanca_crypto_types::*;
 
-use structopt::StructOpt;
 use hex;
 use sgx_ra;
 use structopt::StructOpt;
-
-#[derive(Debug, StructOpt)]
-#[structopt(about = "aas-server usage")]
-struct Opt {
-    #[structopt(
-        long = "conditional-secure",
-        help = "treat conditional secure IAS response as secure"
-    )]
-    conditional_secure: bool,
-    #[structopt(
-        short = "p",
-        long = "port",
-        default_value = "11800",
-        help = "aas-server listening port"
-    )]
-    aas_port: u16,
-}
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "aas-server usage")]
@@ -86,42 +64,25 @@ struct AasServerService {
 }
 
 impl AasServer for AasServerService {
-<<<<<<< HEAD
-    fn timestamp(
-=======
     fn timestamp (
->>>>>>> 8ee5d2c083f12677b9451d134216901913887c3d
         &mut self,
         ctx: RpcContext,
         timestamp_request: TimestampRequest,
         sink: UnarySink<TimestampResponse>,
     ) {
         let aas_timestamp = AasTimestamp {
-<<<<<<< HEAD
-            timestamp: std::time::SystemTime::now()
-=======
             timestamp : std::time::SystemTime::now()
->>>>>>> 8ee5d2c083f12677b9451d134216901913887c3d
                 .duration_since(std::time::SystemTime::UNIX_EPOCH)
                 .unwrap()
                 .as_secs(),
             data: timestamp_request.data,
         };
         let aas_prvkey = Secp256r1PrivateKey::from_der(&self.aas_prvkey_der);
-<<<<<<< HEAD
-        let aas_timestamp_bytes = serde_cbor::to_vec(&aas_timestamp).unwrap();
-        let signed_timestamp = secp256r1_sign_msg(&aas_prvkey, &aas_timestamp_bytes).unwrap();
-        let mut timestamp_response = TimestampResponse::new();
-        timestamp_response.signed_data = serde_cbor::to_vec(&signed_timestamp).unwrap();
-        let f = sink
-            .success(timestamp_response.clone())
-=======
         let aas_timestamp_bytes = serde_json::to_vec(&aas_timestamp).unwrap();
         let signed_timestamp = secp256r1_sign_msg(&aas_prvkey, &aas_timestamp_bytes).unwrap();
         let mut timestamp_response = TimestampResponse::new();
         timestamp_response.signed_data = serde_json::to_vec(&signed_timestamp).unwrap();
         let f = sink.success(timestamp_response.clone())
->>>>>>> 8ee5d2c083f12677b9451d134216901913887c3d
             .map_err(move |err| error!("failed to reply: {:?}", err))
             .map(move |_| trace!("replied with {:?}", timestamp_response));
         ctx.spawn(f)
@@ -287,11 +248,7 @@ fn main() {
 
     let env = Arc::new(Environment::new(4));
     let instance = AasServerService {
-<<<<<<< HEAD
-        conditional_secure: opt.conditional_secure,
-=======
         conditional_secure : opt.conditional_secure,
->>>>>>> 8ee5d2c083f12677b9451d134216901913887c3d
         aas_prvkey_der: aas_prvkey_der,
         spid: spid,
         ias_apikey_str: ias_apikey_str,
