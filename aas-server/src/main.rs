@@ -78,10 +78,10 @@ impl AasServer for AasServerService {
             data: timestamp_request.data,
         };
         let aas_prvkey = Secp256r1PrivateKey::from_der(&self.aas_prvkey_der);
-        let aas_timestamp_bytes = serde_cbor::to_vec(&aas_timestamp).unwrap();
+        let aas_timestamp_bytes = serde_json::to_vec(&aas_timestamp).unwrap();
         let signed_timestamp = secp256r1_sign_msg(&aas_prvkey, &aas_timestamp_bytes).unwrap();
         let mut timestamp_response = TimestampResponse::new();
-        timestamp_response.signed_data = serde_cbor::to_vec(&signed_timestamp).unwrap();
+        timestamp_response.signed_data = serde_json::to_vec(&signed_timestamp).unwrap();
         let f = sink.success(timestamp_response.clone())
             .map_err(move |err| error!("failed to reply: {:?}", err))
             .map(move |_| trace!("replied with {:?}", timestamp_response));
@@ -191,10 +191,10 @@ impl AasServer for AasServerService {
                     // assert_eq!(reg_request_bytes.len(), size_of::<CAasRegRequest>());
 
                     let reg_request: AasRegRequest =
-                        serde_cbor::from_slice(&reg_request_bytes).unwrap();
+                        serde_json::from_slice(&reg_request_bytes).unwrap();
                     let reg_report =
                         sgx_ra::sp_proc_aas_reg_request(&reg_request, &session).unwrap();
-                    let msg_bytes = serde_cbor::to_vec(&reg_report).unwrap();
+                    let msg_bytes = serde_json::to_vec(&reg_report).unwrap();
                     let mut msg = Msg::new();
                     msg.set_msg_type(MsgType::AAS_RA_REG_REPORT);
                     msg.set_msg_bytes(msg_bytes);
