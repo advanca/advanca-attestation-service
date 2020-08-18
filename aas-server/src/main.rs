@@ -64,14 +64,14 @@ struct AasServerService {
 }
 
 impl AasServer for AasServerService {
-    fn timestamp (
+    fn timestamp(
         &mut self,
         ctx: RpcContext,
         timestamp_request: TimestampRequest,
         sink: UnarySink<TimestampResponse>,
     ) {
         let aas_timestamp = AasTimestamp {
-            timestamp : std::time::SystemTime::now()
+            timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::SystemTime::UNIX_EPOCH)
                 .unwrap()
                 .as_secs(),
@@ -82,7 +82,8 @@ impl AasServer for AasServerService {
         let signed_timestamp = secp256r1_sign_msg(&aas_prvkey, &aas_timestamp_bytes).unwrap();
         let mut timestamp_response = TimestampResponse::new();
         timestamp_response.signed_data = serde_json::to_vec(&signed_timestamp).unwrap();
-        let f = sink.success(timestamp_response.clone())
+        let f = sink
+            .success(timestamp_response.clone())
             .map_err(move |err| error!("failed to reply: {:?}", err))
             .map(move |_| trace!("replied with {:?}", timestamp_response));
         ctx.spawn(f)
@@ -248,7 +249,7 @@ fn main() {
 
     let env = Arc::new(Environment::new(4));
     let instance = AasServerService {
-        conditional_secure : opt.conditional_secure,
+        conditional_secure: opt.conditional_secure,
         aas_prvkey_der: aas_prvkey_der,
         spid: spid,
         ias_apikey_str: ias_apikey_str,
