@@ -13,9 +13,9 @@ futures               = { version = "0.3" }
 protobuf              = { version = "=2.8.1" }
 hex                   = { version = "0.4.2" }
 serde_cbor            = { version = "0.11.1" }
-advanca-crypto-types  = { tag = "v0.3.0", git = "https://github.com/advanca/advanca-sgx-helper" }
-advanca-crypto        = { tag = "v0.3.0", git = "https://github.com/advanca/advanca-sgx-helper", features=["std_env"] }
-sgx-ra                = { tag = "v0.3.0", git = "https://github.com/advanca/advanca-sgx-helper" }
+advanca-crypto-types  = { rev = "ab6a466caf362654fced81aea4c5a766cdad856c", git = "https://github.com/advanca/advanca-sgx-helper" }
+advanca-crypto        = { rev = "ab6a466caf362654fced81aea4c5a766cdad856c", git = "https://github.com/advanca/advanca-sgx-helper", features=["std_env"] }
+sgx-ra                = { rev = "ab6a466caf362654fced81aea4c5a766cdad856c", git = "https://github.com/advanca/advanca-sgx-helper" }
 ctrlc                 = "3.1.4"
 log                   = { version = "0.4.8" }
 env_logger            = "0.7.1"
