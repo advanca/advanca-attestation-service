@@ -1,6 +1,6 @@
 [package]
 name = "aas-server"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Advanca Authors"]
 edition = "2018"
 license = "Apache-2.0"
@@ -13,9 +13,9 @@ futures               = { version = "0.3" }
 protobuf              = { version = "=2.8.1" }
 hex                   = { version = "0.4.2" }
 serde_json            = { version = "1" }
-advanca-crypto-types  = { rev = "a1ccddb03cac0928ab5cffd672a3a102574df761", git = "https://github.com/advanca/advanca-sgx-helper", default-features = false }
-advanca-crypto        = { rev = "a1ccddb03cac0928ab5cffd672a3a102574df761", git = "https://github.com/advanca/advanca-sgx-helper", default-features = false, features=["std_env"] }
-sgx-ra                = { rev = "a1ccddb03cac0928ab5cffd672a3a102574df761", git = "https://github.com/advanca/advanca-sgx-helper", default-features = false }
+advanca-crypto-types  = { tag = "v0.4.0", git = "https://github.com/advanca/advanca-sgx-helper", default-features = false }
+advanca-crypto        = { tag = "v0.4.0", git = "https://github.com/advanca/advanca-sgx-helper", default-features = false, features=["std_env"] }
+sgx-ra                = { tag = "v0.4.0", git = "https://github.com/advanca/advanca-sgx-helper", default-features = false }
 ctrlc                 = "3.1.4"
 log                   = { version = "0.4.8" }
 env_logger            = "0.7.1"
